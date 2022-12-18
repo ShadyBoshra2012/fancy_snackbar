@@ -173,7 +173,7 @@ class _CustomSnackbarState extends State<CustomSnackbar>
               _startAnimation.value ?? 0.0,
               (widget.snackBarPosition == FancySnackBarPosition.bottom)
                   ? 0.95
-                  : 0.05,
+                  : -0.95,
             ),
             child: Material(
               color: Colors.transparent,
