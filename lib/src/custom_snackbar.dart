@@ -172,8 +172,8 @@ class _CustomSnackbarState extends State<CustomSnackbar>
             alignment: Alignment(
               _startAnimation.value ?? 0.0,
               (widget.snackBarPosition == FancySnackBarPosition.bottom)
-                  ? 0.95
-                  : -0.95,
+                  ? 0.90
+                  : -0.90,
             ),
             child: Material(
               color: Colors.transparent,
