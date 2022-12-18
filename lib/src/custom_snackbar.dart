@@ -169,7 +169,12 @@ class _CustomSnackbarState extends State<CustomSnackbar>
         animation: _startAnimation,
         builder: (context, child) {
           return Container(
-            alignment: Alignment(_startAnimation.value ?? 0.0, 0.95),
+            alignment: Alignment(
+              _startAnimation.value ?? 0.0,
+              (widget.snackBarPosition == FancySnackBarPosition.bottom)
+                  ? 0.95
+                  : 0.05,
+            ),
             child: Material(
               color: Colors.transparent,
               child: Stack(
@@ -193,14 +198,7 @@ class _CustomSnackbarState extends State<CustomSnackbar>
                         children: [
                           /// snackbar background...
                           Positioned(
-                            bottom: (widget.snackBarPosition ==
-                                    FancySnackBarPosition.bottom)
-                                ? -10
-                                : null,
-                            top: (widget.snackBarPosition ==
-                                    FancySnackBarPosition.top)
-                                ? -10
-                                : null,
+                            bottom: -10,
                             left: -2,
                             child: CustomPaint(
                               size: Size(
