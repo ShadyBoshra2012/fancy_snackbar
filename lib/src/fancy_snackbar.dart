@@ -7,7 +7,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 part 'bubble_painter.dart';
+
 part 'custom_snackbar.dart';
+
 part 'snackbar_utilities.dart';
 
 class FancySnackbar {
@@ -64,6 +66,8 @@ class FancySnackbar {
     /// then you can pass the 'messageWidget'.
     /// when you will pass the 'messageWidget' it will ignore the 'message' if you have passed.
     Widget? messageWidget,
+
+    FancySnackBarPosition snackBarPosition = FancySnackBarPosition.bottom,
   }) async {
     /// creating new instance of OverlayEntry and using CustomSnackbar to render on the display using overlay.
     OverlayEntry d = OverlayEntry(
@@ -78,6 +82,7 @@ class FancySnackbar {
           snackBarType: snackBarType,
           titleWidget: titleWidget,
           color: color,
+          snackBarPosition: snackBarPosition,
         );
       },
     );

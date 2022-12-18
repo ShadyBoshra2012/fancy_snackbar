@@ -9,6 +9,12 @@ enum FancySnackBarType {
   waiting,
 }
 
+/// these are the snackbar posititon.
+enum FancySnackBarPosition {
+  top,
+  bottom,
+}
+
 /// this function is returning the default title based on the snackbar type.
 String getSnackbarTitle(FancySnackBarType type) {
   switch (type) {
