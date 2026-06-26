@@ -83,6 +83,11 @@ class FancySnackbar {
           titleWidget: titleWidget,
           color: color,
           snackBarPosition: snackBarPosition,
+          onDismissed: () {
+            if (d.mounted) {
+              d.remove();
+            }
+          },
         );
       },
     );

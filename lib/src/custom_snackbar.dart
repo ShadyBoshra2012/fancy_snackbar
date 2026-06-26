@@ -50,6 +50,9 @@ class CustomSnackbar extends StatefulWidget {
 
   final FancySnackBarPosition? snackBarPosition;
 
+  /// callback fired when reverse animation is fully dismissed.
+  final VoidCallback? onDismissed;
+
   const CustomSnackbar({
     Key? key,
     required this.animationDuration,
@@ -62,6 +65,7 @@ class CustomSnackbar extends StatefulWidget {
     required this.snackBarType,
     required this.color,
     required this.snackBarPosition,
+    required this.onDismissed,
   }) : super(key: key);
 
   @override
@@ -74,7 +78,7 @@ class _CustomSnackbarState extends State<CustomSnackbar>
   late AnimationController _animationStartController;
 
   /// this is the animation for snackbar.
-  late Animation _startAnimation;
+  late Animation<Offset> _startAnimation;
 
   /// this is the animation controlle for floating bubble.
   late AnimationController _bubbleAnimationController;
@@ -93,17 +97,18 @@ class _CustomSnackbarState extends State<CustomSnackbar>
         milliseconds: (widget.animationDuration * 1000).toInt(),
       ),
       reverseDuration: Duration(
-        milliseconds: (widget.animationDuration * 1000).toInt(),
+        milliseconds: (widget.reverseAnimationDuration * 1000).toInt(),
       ),
     );
 
     /// assigning the animation and linking with the controller of snackbar.
-    _startAnimation = Tween<double>(begin: -60.0, end: 0.0).animate(
-      CurvedAnimation(
-        parent: _animationStartController,
-        curve: Curves.bounceInOut,
-      ),
-    );
+    _startAnimation =
+        Tween<Offset>(begin: const Offset(-1.2, 0.0), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationStartController,
+            curve: Curves.bounceInOut,
+          ),
+        );
 
     /// initializing the controller for floating bubble.
     _bubbleAnimationController = AnimationController(
@@ -127,23 +132,33 @@ class _CustomSnackbarState extends State<CustomSnackbar>
     /// start the animation to repeat continue and with the reverse.
     _bubbleAnimationController.repeat(reverse: true);
 
+    _animationStartController.addStatusListener((status) {
+      if (status == AnimationStatus.dismissed) {
+        /// stop floating icon movement and notify parent to remove overlay.
+        _bubbleAnimationController.stop();
+        widget.onDismissed?.call();
+      }
+    });
+
     /// starting the animation to take snackbar in display.
     _animationStartController.forward().then((value) async {
       /// calculated the total waitting/holding duration.
       /// snackbar will hold on display for this duration.
-      double displayDuration = widget.duration -
-          (widget.animationDuration + widget.reverseAnimationDuration);
+      final double displayDuration =
+          (widget.duration -
+                  (widget.animationDuration + widget.reverseAnimationDuration))
+              .clamp(0.0, double.infinity);
 
-      /// after calucating the duration to hold make the snackbar holding on screen.
+      /// after calculating the duration to hold make the snackbar holding on screen.
       /// and once the hold time is over getting snackbar off the screen with reverse animation.
       await Future.delayed(
-        Duration(
-          milliseconds: (displayDuration * 1000).toInt(),
-        ),
-      ).then((value) => _animationStartController.reverse());
+        Duration(milliseconds: (displayDuration * 1000).toInt()),
+      );
 
-      /// once the snackbar goes off the screen, stop the animation of floating bubble.
-      _bubbleAnimationController.stop();
+      if (mounted &&
+          _animationStartController.status != AnimationStatus.reverse) {
+        _animationStartController.reverse();
+      }
     });
   }
 
@@ -165,146 +180,149 @@ class _CustomSnackbarState extends State<CustomSnackbar>
   Widget build(BuildContext context) {
     /// basic logical part to select random even number.
     isFirstShape = r.nextInt(100).isEven;
-    return AnimatedBuilder(
-        animation: _startAnimation,
-        builder: (context, child) {
-          return Container(
-            alignment: Alignment(
-              _startAnimation.value ?? 0.0,
-              (widget.snackBarPosition == FancySnackBarPosition.bottom)
-                  ? 0.90
-                  : -0.90,
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.all(
-                      Radius.circular(20),
-                    ),
-                    child: Container(
-                      width: MediaQuery.of(context).size.width - 20,
-                      decoration: BoxDecoration(
-                        color: getSnackbarColor(widget.color ??
-                                getSnackbarDefaultColor(widget.snackBarType))
-                            .withOpacity(0.8),
-                        borderRadius: const BorderRadius.all(
-                          Radius.circular(20),
+    return SlideTransition(
+      position: _startAnimation,
+      child: Align(
+        alignment: Alignment(
+          0,
+          (widget.snackBarPosition == FancySnackBarPosition.bottom)
+              ? 0.90
+              : -0.90,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.all(Radius.circular(20)),
+                child: Container(
+                  width: MediaQuery.of(context).size.width - 20,
+                  decoration: BoxDecoration(
+                    color: getSnackbarColor(
+                      widget.color ??
+                          getSnackbarDefaultColor(widget.snackBarType),
+                    ).withOpacity(0.8),
+                    borderRadius: const BorderRadius.all(Radius.circular(20)),
+                  ),
+                  child: Stack(
+                    children: [
+                      /// snackbar background...
+                      Positioned(
+                        bottom: -10,
+                        left: -2,
+                        child: CustomPaint(
+                          size: Size(50, (50 * 1.0857142857142856).toDouble()),
+                          painter: isFirstShape
+                              ? SnackBackShape2(
+                                  color: getSnackbarColor(
+                                    widget.color ??
+                                        getSnackbarDefaultColor(
+                                          widget.snackBarType,
+                                        ),
+                                  ),
+                                )
+                              : SnackBackShape1(
+                                  color: getSnackbarColor(
+                                    widget.color ??
+                                        getSnackbarDefaultColor(
+                                          widget.snackBarType,
+                                        ),
+                                  ),
+                                ),
                         ),
                       ),
-                      child: Stack(
-                        children: [
-                          /// snackbar background...
-                          Positioned(
-                            bottom: -10,
-                            left: -2,
-                            child: CustomPaint(
-                              size: Size(
-                                  50, (50 * 1.0857142857142856).toDouble()),
-                              painter: isFirstShape
-                                  ? SnackBackShape2(
-                                      color: getSnackbarColor(widget.color ??
-                                          getSnackbarDefaultColor(
-                                              widget.snackBarType)),
-                                    )
-                                  : SnackBackShape1(
-                                      color: getSnackbarColor(widget.color ??
-                                          getSnackbarDefaultColor(
-                                              widget.snackBarType)),
-                                    ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 10, horizontal: 20),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(width: 50),
-                                Expanded(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      /// snackbar title part.
-                                      widget.titleWidget ??
-                                          Text(
-                                            widget.title ??
-                                                getSnackbarTitle(
-                                                    widget.snackBarType),
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 24,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 10,
+                          horizontal: 20,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(width: 50),
+                            Expanded(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  /// snackbar title part.
+                                  widget.titleWidget ??
+                                      Text(
+                                        widget.title ??
+                                            getSnackbarTitle(
+                                              widget.snackBarType,
                                             ),
-                                          ),
-                                      const SizedBox(height: 5),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 24,
+                                        ),
+                                      ),
+                                  const SizedBox(height: 5),
 
-                                      /// snackbar message part.
-                                      widget.messageWidget ??
-                                          Text(
-                                            widget.message ??
-                                                getSnackbarMessage(
-                                                    widget.snackBarType),
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.normal,
-                                              fontSize: 14,
+                                  /// snackbar message part.
+                                  widget.messageWidget ??
+                                      Text(
+                                        widget.message ??
+                                            getSnackbarMessage(
+                                              widget.snackBarType,
                                             ),
-                                          ),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.normal,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                ],
+                              ),
                             ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              /// Floating bubble.
+              AnimatedBuilder(
+                animation: _bubbleAnimation,
+                builder: (context, child) {
+                  return Positioned(
+                    top: -(_bubbleAnimation.value * 10) - 20,
+                    left: 20,
+                    child: Transform(
+                      transform: Matrix4.rotationZ(_bubbleAnimation.value),
+                      alignment: Alignment.center,
+                      child: CustomPaint(
+                        painter: BubblePainter(
+                          color: getSnackbarColor(
+                            widget.color ??
+                                getSnackbarDefaultColor(widget.snackBarType),
                           ),
-                        ],
+                        ),
+                        child: Container(
+                          height: 40,
+                          width: 40,
+                          alignment: Alignment.center,
+                          child: Icon(
+                            getSnackbarIcon(widget.snackBarType),
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-
-                  /// Floating bubble.
-                  AnimatedBuilder(
-                      animation: _bubbleAnimation,
-                      builder: (context, child) {
-                        return Positioned(
-                          top: -(_bubbleAnimation.value * 10) - 20,
-                          left: 20,
-                          child: Transform(
-                            transform:
-                                Matrix4.rotationZ(_bubbleAnimation.value),
-                            alignment: Alignment.center,
-                            child: CustomPaint(
-                              painter: BubblePainter(
-                                color: getSnackbarColor(widget.color ??
-                                    getSnackbarDefaultColor(
-                                        widget.snackBarType)),
-                              ),
-                              child: Container(
-                                height: 40,
-                                width: 40,
-                                alignment: Alignment.center,
-                                child: Icon(
-                                  getSnackbarIcon(
-                                    widget.snackBarType,
-                                  ),
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
-                ],
+                  );
+                },
               ),
-            ),
-          );
-        });
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
