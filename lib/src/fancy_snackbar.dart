@@ -70,7 +70,8 @@ class FancySnackbar {
     FancySnackBarPosition snackBarPosition = FancySnackBarPosition.bottom,
   }) async {
     /// creating new instance of OverlayEntry and using CustomSnackbar to render on the display using overlay.
-    OverlayEntry d = OverlayEntry(
+    late final OverlayEntry d;
+    d = OverlayEntry(
       builder: (context) {
         return CustomSnackbar(
           duration: duration,
